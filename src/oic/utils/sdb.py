@@ -6,6 +6,7 @@ import json
 import logging
 import time
 import uuid
+import warnings
 
 from cryptography.fernet import Fernet
 
@@ -145,8 +146,11 @@ class Token(object):
         pass
 
     def valid(self, token):
-        self.type_and_key(token)
-        return True
+        typ, _ = self.type_and_key(token)
+        if typ != self.type:
+            raise WrongTokenType
+        else:
+            return True
 
 
 class DefaultToken(Token):
@@ -279,6 +283,10 @@ class AuthnEvent(object):
 class RefreshDB(object):
     """Database for refresh token storage."""
 
+    def __init__(self):
+        warnings.warn('Using `RefreshDB` is deprecated, please use `Token` and `refresh_token_factory` instead.',
+                      DeprecationWarning, stacklevel=2)
+
     def get(self, refresh_token):
         """
         Retrieve info about the authentication proces from the refresh token.
@@ -342,7 +350,8 @@ class DictRefreshDB(RefreshDB):
     """Dictionary based implementation of RefreshDB."""
 
     def __init__(self):
-        super(DictRefreshDB, self).__init__()
+        warnings.warn('Using `DictRefreshDB` is deprecated, please use `Token` and `refresh_token_factory` instead.',
+                      DeprecationWarning, stacklevel=2)
         self._db = {}
 
     def get(self, refresh_token):
@@ -381,6 +390,8 @@ def create_session_db(base_url, secret, password, db=None,
                                 lifetime=grant_expires_in)
     token_factory = DefaultToken(secret, password, typ='T',
                                  lifetime=token_expires_in)
+    refresh_token_factory = DefaultToken(secret, password, typ='R',
+                                         lifetime=refresh_token_expires_in)
     db = {} if db is None else db
 
     return SessionDB(
@@ -388,17 +399,19 @@ def create_session_db(base_url, secret, password, db=None,
         refresh_db=None,
         code_factory=code_factory,
         token_factory=token_factory,
-        refresh_token_expires_in=refresh_token_expires_in,
-        refresh_token_factory=None,
+        refresh_token_factory=refresh_token_factory,
     )
 
 
 class SessionDB(object):
     def __init__(self, base_url, db, refresh_db=None,
-                 refresh_token_expires_in=86400,
+                 refresh_token_expires_in=None,
                  token_factory=None, code_factory=None,
                  refresh_token_factory=None):
 
+        if refresh_token_expires_in is not None:
+            warnings.warn('Setting a `refresh_token_expires_in` has no effect, please set the expiration on '
+                          '`refresh_token_factory`.', DeprecationWarning)
         self.base_url = base_url
         self._db = db
 
@@ -423,6 +436,8 @@ class SessionDB(object):
             self.token_factory['refresh_token'] = refresh_token_factory
             self.token_factory_order.append('refresh_token')
         elif refresh_db:
+            warnings.warn('Using `refresh_db` is deprecated, please use `refresh_token_factory`', DeprecationWarning,
+                          stacklevel=2)
             self._refresh_db = refresh_db
         else:
             self._refresh_db = DictRefreshDB()
