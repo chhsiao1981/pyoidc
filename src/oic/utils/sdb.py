@@ -7,8 +7,10 @@ import logging
 import time
 import uuid
 import warnings
+from binascii import Error
 
 from cryptography.fernet import Fernet
+from cryptography.fernet import InvalidToken
 
 from oic import rndstr
 from oic.exception import ImproperlyConfigured
@@ -79,10 +81,16 @@ class Crypt(object):
 
 
 class Token(object):
-    def __init__(self, typ, lifetime=0, **kwargs):
+    def __init__(self, typ, lifetime=0, token_storage=None, **kwargs):
         self.type = typ
         self.lifetime = lifetime
         self.args = kwargs
+        if typ == 'R':
+            if token_storage is None:
+                # FIXME: Remove the comment
+                token_storage = {}
+                # raise ImproperlyConfigured("token_storage kwarg must be passed in for refresh token.")
+        self.token_storage = token_storage
 
     def __call__(self, sid, *args, **kwargs):
         """
@@ -143,12 +151,19 @@ class Token(object):
         return bool(now > eat)
 
     def invalidate(self, token):
-        pass
+        """Mark the refresh token as invalidated."""
+        if self.get_type(token) != "R":
+            return
+        sid = self.get_key(token)
+        self.token_storage["sid"]["revoked"] = True
 
     def valid(self, token):
-        typ, _ = self.type_and_key(token)
+        try:
+            typ, _ = self.type_and_key(token)
+        except (Error, InvalidToken):
+            raise WrongTokenType()
         if typ != self.type:
-            raise WrongTokenType
+            raise WrongTokenType()
         else:
             return True
 
@@ -178,6 +193,8 @@ class DefaultToken(Token):
             rnd = rndstr(32)  # Ultimate length multiple of 16
 
         issued_at = "{}".format(utc_time_sans_frac())
+        if ttype == "R":
+            self.token_storage[sid] = {}
 
         return base64.b64encode(
             self.crypt.encrypt(lv_pack(rnd, ttype, sid, issued_at).encode())

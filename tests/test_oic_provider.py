@@ -1658,13 +1658,14 @@ class TestProvider(object):
         assert atr['error_description'] == 'Not a refresh token'
 
     def test_refresh_token_grant_type_expired(self):
-        # Missing refresh_token also raises Expired
+        # FIXME: Should this be here? We are not checking for the lifetime at all in the code
         rareq = RefreshAccessTokenRequest(grant_type="refresh_token",
-                                          refresh_token='Refresh_some_other_refresh_token',
+                                          refresh_token="some token",
                                           client_id=CLIENT_ID,
                                           client_secret=CLIENT_SECRET,
                                           scope=['openid'])
 
+        __import__('pdb').set_trace()
         resp = self.provider.refresh_token_grant_type(rareq)
         atr = TokenErrorResponse().deserialize(resp.message, "json")
         assert atr['error'] == 'invalid_request'
