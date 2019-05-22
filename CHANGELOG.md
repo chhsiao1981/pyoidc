@@ -19,6 +19,7 @@ The format is based on the [KeepAChangeLog] project.
 - [#639] Make sure symmetric keys are available after server restart
 
 ### Changed
+- [#???] Messages needed for Single-Sign-Out Support
 - [#578] Dropped python 2.7 support
 - [#612] Dropped python 3.4 support
 - [#588] Switch to defusedxml for XML parsing
