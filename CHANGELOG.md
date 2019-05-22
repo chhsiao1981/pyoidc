@@ -13,6 +13,7 @@ The format is based on the [KeepAChangeLog] project.
 - [#398] Do not echo cookies that do not belong to us
 
 ### Changed
+- [#???] Messages needed for Single-Sign-Out Support
 - [#578] Dropped python 2.7 support
 - [#588] Switch to defusedxml for XML parsing
 - [#605] Message.c_param dictionary values have to be a ParamDefinition namedtuple type
