@@ -1015,6 +1015,8 @@ SCOPE2CLAIMS = {
 SINGLE_OPTIONAL_JSON = ParamDefinition(dict, False, json_ser, json_deser, False)
 SINGLE_REQUIRED_JSON = ParamDefinition(dict, True, json_ser, json_deser, False)
 
+BACK_CHANNEL_LOGOUT_EVENT = "http://schemas.openid.net/event/backchannel-logout"
+
 
 class LogoutToken(Message):
     """
@@ -1042,7 +1044,7 @@ class LogoutToken(Message):
         _keys = list(self['events'].keys())
         if len(_keys) != 1:
             raise ValueError('Must only be one member in "events"')
-        if _keys[0] != "http://schemas.openid.net/event/backchannel-logout":
+        if _keys[0] != BACK_CHANNEL_LOGOUT_EVENT:
             raise ValueError('Wrong member in "events"')
         if self['events'][_keys[0]] != {}:
             raise ValueError('Wrong member value in "events"')
@@ -1071,17 +1073,14 @@ class LogoutToken(Message):
             _skew = 0
 
         try:
-            _exp = self['iat']
+            _iat = self['iat']
         except KeyError:
             pass
         else:
-            if self['iat'] > (_now + _skew):
+            if _iat > (_now + _skew):
                 raise ValueError('Invalid issued_at time')
 
         return True
-
-
-BACK_CHANNEL_LOGOUT_EVENT = "http://schemas.openid.net/event/backchannel-logout"
 
 
 ID_TOKEN_VERIFY_ARGS = ['keyjar', 'verify', 'encalg', 'encenc', 'sigalg',
