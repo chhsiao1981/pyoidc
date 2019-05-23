@@ -18,19 +18,19 @@ from oic.exception import NotForMe
 from oic.exception import PyoidcError
 from oic.oauth2 import message
 from oic.oauth2.exception import VerificationError
+from oic.oauth2.message import Message
+from oic.oauth2.message import MissingRequiredAttribute
+from oic.oauth2.message import MissingRequiredValue
+from oic.oauth2.message import NotAllowedValue
 from oic.oauth2.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
 from oic.oauth2.message import OPTIONAL_LIST_OF_STRINGS
+from oic.oauth2.message import ParamDefinition
 from oic.oauth2.message import REQUIRED_LIST_OF_SP_SEP_STRINGS
 from oic.oauth2.message import REQUIRED_LIST_OF_STRINGS
 from oic.oauth2.message import SINGLE_OPTIONAL_INT
 from oic.oauth2.message import SINGLE_OPTIONAL_JSON
 from oic.oauth2.message import SINGLE_OPTIONAL_STRING
 from oic.oauth2.message import SINGLE_REQUIRED_STRING
-from oic.oauth2.message import Message
-from oic.oauth2.message import MissingRequiredAttribute
-from oic.oauth2.message import MissingRequiredValue
-from oic.oauth2.message import NotAllowedValue
-from oic.oauth2.message import ParamDefinition
 from oic.oauth2.message import SchemeError
 from oic.utils import time_util
 from oic.utils.time_util import utc_time_sans_frac
@@ -258,10 +258,13 @@ def check_char_set(string, allowed):
             raise NotAllowedValue("'%c' not in the allowed character set" % c)
 
 
+TOKEN_VERIFY_ARGS = ["key", "keyjar", "algs", "sender"]
+
+
 def verify_id_token(instance, check_hash=False, **kwargs):
     # Try to decode the JWT, checks the signature
     args = {}
-    for arg in ["key", "keyjar", "algs", "sender"]:
+    for arg in TOKEN_VERIFY_ARGS:
         try:
             args[arg] = kwargs[arg]
         except KeyError:
@@ -484,8 +487,10 @@ class AuthorizationRequest(message.AuthorizationRequest):
 
 class AccessTokenRequest(message.AccessTokenRequest):
     c_param = message.AccessTokenRequest.c_param.copy()
-    c_param.update({"client_assertion_type": SINGLE_OPTIONAL_STRING,
-                    "client_assertion": SINGLE_OPTIONAL_STRING})
+    c_param.update({
+                       "client_assertion_type": SINGLE_OPTIONAL_STRING,
+                       "client_assertion": SINGLE_OPTIONAL_STRING
+                   })
     c_default = {"grant_type": "authorization_code"}
     c_allowed_values = {
         "client_assertion_type": [
@@ -494,37 +499,41 @@ class AccessTokenRequest(message.AccessTokenRequest):
 
 
 class AddressClaim(Message):
-    c_param = {"formatted": SINGLE_OPTIONAL_STRING,
-               "street_address": SINGLE_OPTIONAL_STRING,
-               "locality": SINGLE_OPTIONAL_STRING,
-               "region": SINGLE_OPTIONAL_STRING,
-               "postal_code": SINGLE_OPTIONAL_STRING,
-               "country": SINGLE_OPTIONAL_STRING}
+    c_param = {
+        "formatted": SINGLE_OPTIONAL_STRING,
+        "street_address": SINGLE_OPTIONAL_STRING,
+        "locality": SINGLE_OPTIONAL_STRING,
+        "region": SINGLE_OPTIONAL_STRING,
+        "postal_code": SINGLE_OPTIONAL_STRING,
+        "country": SINGLE_OPTIONAL_STRING
+    }
 
 
 class OpenIDSchema(Message):
-    c_param = {"sub": SINGLE_REQUIRED_STRING,
-               "name": SINGLE_OPTIONAL_STRING,
-               "given_name": SINGLE_OPTIONAL_STRING,
-               "family_name": SINGLE_OPTIONAL_STRING,
-               "middle_name": SINGLE_OPTIONAL_STRING,
-               "nickname": SINGLE_OPTIONAL_STRING,
-               "preferred_username": SINGLE_OPTIONAL_STRING,
-               "profile": SINGLE_OPTIONAL_STRING,
-               "picture": SINGLE_OPTIONAL_STRING,
-               "website": SINGLE_OPTIONAL_STRING,
-               "email": SINGLE_OPTIONAL_STRING,
-               "email_verified": SINGLE_OPTIONAL_BOOLEAN,
-               "gender": SINGLE_OPTIONAL_STRING,
-               "birthdate": SINGLE_OPTIONAL_STRING,
-               "zoneinfo": SINGLE_OPTIONAL_STRING,
-               "locale": SINGLE_OPTIONAL_STRING,
-               "phone_number": SINGLE_OPTIONAL_STRING,
-               "phone_number_verified": SINGLE_OPTIONAL_BOOLEAN,
-               "address": OPTIONAL_ADDRESS,
-               "updated_at": SINGLE_OPTIONAL_INT,
-               "_claim_names": OPTIONAL_MESSAGE,
-               "_claim_sources": OPTIONAL_MESSAGE}
+    c_param = {
+        "sub": SINGLE_REQUIRED_STRING,
+        "name": SINGLE_OPTIONAL_STRING,
+        "given_name": SINGLE_OPTIONAL_STRING,
+        "family_name": SINGLE_OPTIONAL_STRING,
+        "middle_name": SINGLE_OPTIONAL_STRING,
+        "nickname": SINGLE_OPTIONAL_STRING,
+        "preferred_username": SINGLE_OPTIONAL_STRING,
+        "profile": SINGLE_OPTIONAL_STRING,
+        "picture": SINGLE_OPTIONAL_STRING,
+        "website": SINGLE_OPTIONAL_STRING,
+        "email": SINGLE_OPTIONAL_STRING,
+        "email_verified": SINGLE_OPTIONAL_BOOLEAN,
+        "gender": SINGLE_OPTIONAL_STRING,
+        "birthdate": SINGLE_OPTIONAL_STRING,
+        "zoneinfo": SINGLE_OPTIONAL_STRING,
+        "locale": SINGLE_OPTIONAL_STRING,
+        "phone_number": SINGLE_OPTIONAL_STRING,
+        "phone_number_verified": SINGLE_OPTIONAL_BOOLEAN,
+        "address": OPTIONAL_ADDRESS,
+        "updated_at": SINGLE_OPTIONAL_INT,
+        "_claim_names": OPTIONAL_MESSAGE,
+        "_claim_sources": OPTIONAL_MESSAGE
+    }
 
     def verify(self, **kwargs):
         super(OpenIDSchema, self).verify(**kwargs)
@@ -587,8 +596,10 @@ class RegistrationRequest(Message):
         "backchannel_logout_session_required": OPTIONAL_LOGICAL
     }
     c_default = {"application_type": "web", "response_types": ["code"]}
-    c_allowed_values = {"application_type": ["native", "web"],
-                        "subject_type": ["public", "pairwise"]}
+    c_allowed_values = {
+        "application_type": ["native", "web"],
+        "subject_type": ["public", "pairwise"]
+    }
 
     def verify(self, **kwargs):
         super(RegistrationRequest, self).verify(**kwargs)
@@ -649,9 +660,11 @@ class RegistrationResponse(Message):
 
 
 class ClientRegistrationErrorResponse(message.ErrorResponse):
-    c_allowed_values = {"error": ["invalid_redirect_uri",
-                                  "invalid_client_metadata",
-                                  "invalid_configuration_parameter"]}
+    c_allowed_values = {
+        "error": ["invalid_redirect_uri",
+                  "invalid_client_metadata",
+                  "invalid_configuration_parameter"]
+    }
 
 
 class IdToken(OpenIDSchema):
@@ -736,9 +749,11 @@ class IdToken(OpenIDSchema):
 
 
 class RefreshSessionRequest(Message):
-    c_param = {"id_token": SINGLE_REQUIRED_STRING,
-               "redirect_url": SINGLE_REQUIRED_STRING,
-               "state": SINGLE_REQUIRED_STRING}
+    c_param = {
+        "id_token": SINGLE_REQUIRED_STRING,
+        "redirect_url": SINGLE_REQUIRED_STRING,
+        "state": SINGLE_REQUIRED_STRING
+    }
 
     def verify(self, **kwargs):
         super(RefreshSessionRequest, self).verify(**kwargs)
@@ -749,8 +764,10 @@ class RefreshSessionRequest(Message):
 
 
 class RefreshSessionResponse(Message):
-    c_param = {"id_token": SINGLE_REQUIRED_STRING,
-               "state": SINGLE_REQUIRED_STRING}
+    c_param = {
+        "id_token": SINGLE_REQUIRED_STRING,
+        "state": SINGLE_REQUIRED_STRING
+    }
 
     def verify(self, **kwargs):
         super(RefreshSessionResponse, self).verify(**kwargs)
@@ -845,14 +862,16 @@ class ProviderConfigurationResponse(Message):
         "check_session_iframe": SINGLE_OPTIONAL_STRING,
         "end_session_endpoint": SINGLE_OPTIONAL_STRING,
     }
-    c_default = {"version": "3.0",
-                 "token_endpoint_auth_methods_supported": [
-                     "client_secret_basic"],
-                 "claims_parameter_supported": False,
-                 "request_parameter_supported": False,
-                 "request_uri_parameter_supported": True,
-                 "require_request_uri_registration": False,
-                 "grant_types_supported": ["authorization_code", "implicit"]}
+    c_default = {
+        "version": "3.0",
+        "token_endpoint_auth_methods_supported": [
+            "client_secret_basic"],
+        "claims_parameter_supported": False,
+        "request_parameter_supported": False,
+        "request_uri_parameter_supported": True,
+        "require_request_uri_registration": False,
+        "grant_types_supported": ["authorization_code", "implicit"]
+    }
 
     def verify(self, **kwargs):
         super(ProviderConfigurationResponse, self).verify(**kwargs)
@@ -871,7 +890,7 @@ class ProviderConfigurationResponse(Message):
             raise AssertionError()
 
         if any("code" in rt for rt in self[
-                "response_types_supported"]) and "token_endpoint" not in self:
+            "response_types_supported"]) and "token_endpoint" not in self:
             raise MissingRequiredAttribute("token_endpoint")
 
         return True
@@ -915,13 +934,17 @@ SINGLE_OPTIONAL_JWT = ParamDefinition(Message, False, msg_ser, jwt_deser, False)
 
 
 class UserInfoErrorResponse(message.ErrorResponse):
-    c_allowed_values = {"error": ["invalid_schema", "invalid_request",
-                                  "invalid_token", "insufficient_scope"]}
+    c_allowed_values = {
+        "error": ["invalid_schema", "invalid_request",
+                  "invalid_token", "insufficient_scope"]
+    }
 
 
 class DiscoveryRequest(Message):
-    c_param = {"principal": SINGLE_REQUIRED_STRING,
-               "service": SINGLE_REQUIRED_STRING}
+    c_param = {
+        "principal": SINGLE_REQUIRED_STRING,
+        "service": SINGLE_REQUIRED_STRING
+    }
 
 
 class DiscoveryResponse(Message):
@@ -984,7 +1007,7 @@ class LogoutToken(Message):
             raise ValueError('Wrong member value in "events"')
 
         # There must be either a 'sub' or a 'sid', and may contain both
-        if not('sub' in self or 'sid' in self):
+        if not ('sub' in self or 'sid' in self):
             raise ValueError('There MUST be either a "sub" or a "sid"')
 
         try:
@@ -1017,26 +1040,21 @@ class LogoutToken(Message):
         return True
 
 
-ID_TOKEN_VERIFY_ARGS = ['keyjar', 'verify', 'encalg', 'encenc', 'sigalg',
-                        'issuer', 'allow_missing_kid', 'no_kid_issuer',
-                        'trusting', 'skew', 'nonce_storage_time', 'client_id']
-
-
 class BackChannelLogoutRequest(Message):
     """
-    Defined in
-    https://openid.net/specs/openid-connect-backchannel-1_0.html#LogoutToken
+    Defines the message used in
+    https://openid.net/specs/openid-connect-backchannel-1_0.html
     """
 
     c_param = {
         "logout_token": SINGLE_REQUIRED_STRING
-        }
+    }
 
     def verify(self, **kwargs):
         super(BackChannelLogoutRequest, self).verify(**kwargs)
 
         args = {}
-        for arg in ID_TOKEN_VERIFY_ARGS:
+        for arg in TOKEN_VERIFY_ARGS:
             try:
                 args[arg] = kwargs[arg]
             except KeyError:
@@ -1052,6 +1070,10 @@ class BackChannelLogoutRequest(Message):
 
 
 class FrontChannelLogoutRequest(Message):
+    """
+    Defines the message used in
+    https://openid.net/specs/openid-connect-frontchannel-1_0.html
+    """
     c_param = {
         "iss": SINGLE_OPTIONAL_STRING,
         "sid": SINGLE_OPTIONAL_STRING
