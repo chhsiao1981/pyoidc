@@ -964,110 +964,125 @@ def test_verify_token_encrypted_no_key():
                         client_id="554295ce3770612820620000")
 
 
-def test_logout_token():
-    # All the required claims. Note there must be a sub, a sid or both
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac(), jti=rndstr(16),
-                     sub='https://example.com/sub')
+class TestLogoutToken():
+    def test_with_sub(self):
+        # All the required claims. Note there must be a sub, a sid or both
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16),
+                         sub='https://example.com/sub')
 
-    assert lt.verify()
+        assert lt.verify()
 
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac(), jti=rndstr(16),
-                     sid=rndstr())
+    def test_with_sid(self):
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16),
+                         sid=rndstr())
 
-    assert lt.verify()
+        assert lt.verify()
 
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac(), jti=rndstr(16),
-                     sub='https://example.com/sub', sid=rndstr())
+    def test_with_sub_and_sid(self):
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16),
+                         sub='https://example.com/sub', sid=rndstr())
 
-    assert lt.verify()
+        assert lt.verify()
 
+    def test_no_sub_or_sid(self):
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16))
 
-def test_logout_token_verify_error():
-    # No sub or sid
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac(), jti=rndstr(16))
+        with pytest.raises(ValueError):
+            lt.verify()
 
-    with pytest.raises(ValueError):
-        lt.verify()
+    def test_extra_event(self):
+        # more the one event
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={
+                             BACK_CHANNEL_LOGOUT_EVENT: {},
+                             'http://schemas.openid.net/event/other}': {}
+                         },
+                         jti=rndstr(16),
+                         iat=utc_time_sans_frac(), sub='https://example.com/sub')
 
-    # more the one event
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={
-                         BACK_CHANNEL_LOGOUT_EVENT: {},
-                         'http://schemas.openid.net/event/other}': {}
-                     },
-                     jti=rndstr(16),
-                     iat=utc_time_sans_frac(), sub='https://example.com/sub')
+        with pytest.raises(ValueError):
+            lt.verify()
 
-    with pytest.raises(ValueError):
-        lt.verify()
+    def test_wrong_event(self):
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={
+                             'http://schemas.openid.net/event/other}': {}
+                         },
+                         jti=rndstr(16),
+                         iat=utc_time_sans_frac(), sub='https://example.com/sub')
 
-    # wrong event
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={
-                         'http://schemas.openid.net/event/other}': {}
-                     },
-                     jti=rndstr(16),
-                     iat=utc_time_sans_frac(), sub='https://example.com/sub')
+        with pytest.raises(ValueError):
+            lt.verify()
 
-    with pytest.raises(ValueError):
-        lt.verify()
+    def test_wrong_aud(self):
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16),
+                         sub='https://example.com/sub')
 
-    # wrong aud
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac(), jti=rndstr(16),
-                     sub='https://example.com/sub')
+        with pytest.raises(NotForMe):
+            lt.verify(aud='https://example.com')
 
-    with pytest.raises(NotForMe):
-        lt.verify(aud='https://example.com')
+    def test_wrong_iss(self):
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16),
+                         sub='https://example.com/sub')
 
-    with pytest.raises(NotForMe):
-        lt.verify(iss='https://rp.example.org')
+        with pytest.raises(NotForMe):
+            lt.verify(iss='https://rp.example.org')
 
-    # Issued sometime in the future
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac()+86400, jti=rndstr(16),
-                     sub='https://example.com/sub')
+    def test_wrong_iat(self):
+        # Issued sometime in the future
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac()+86400, jti=rndstr(16),
+                         sub='https://example.com/sub')
 
-    with pytest.raises(ValueError):
-        lt.verify()
-
-
-def test_backchannel_logout_request():
-    lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
-                     events={BACK_CHANNEL_LOGOUT_EVENT: {}},
-                     iat=utc_time_sans_frac(), jti=rndstr(16),
-                     sub='https://example.com/sub')
-
-    kj = KeyJar()
-    kj.add_symmetric("", 'dYMmrcQksKaPkhdgRNYk3zzh5l7ewdDJ', ['sig'])
-    key = kj.get_signing_key('oct')
-
-    _signed_jwt = lt.to_jwt(key=key, algorithm="HS256")
-
-    bclr = BackChannelLogoutRequest(logout_token=_signed_jwt)
-
-    assert bclr.verify(keyjar=kj)
-
-    bclr = BackChannelLogoutRequest(logout_token=_signed_jwt)
-
-    assert bclr.verify(key=key)
-
-    # The signed JWT is replaced by a dictionary with all the verified values
-    assert bclr['logout_token']['iss'] == 'https://example.com'
+        with pytest.raises(ValueError):
+            lt.verify()
 
 
-def test_frontchannel_logout_request():
-    # May be completely empty
-    fclr = FrontChannelLogoutRequest()
+class TestBackchannelLogout(object):
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.kj = KeyJar()
+        self.kj.add_symmetric("", 'dYMmrcQksKaPkhdgRNYk3zzh5l7ewdDJ', ['sig'])
+        self.key = self.kj.get_signing_key('oct')
+        lt = LogoutToken(iss='https://example.com', aud=['https://rp.example.org'],
+                         events={BACK_CHANNEL_LOGOUT_EVENT: {}},
+                         iat=utc_time_sans_frac(), jti=rndstr(16),
+                         sub='https://example.com/sub')
 
-    assert fclr.verify()
+        self.signed_jwt = lt.to_jwt(key=self.key, algorithm="HS256")
+
+    def test_verify_with_keyjar(self):
+
+        bclr = BackChannelLogoutRequest(logout_token=self.signed_jwt)
+        assert bclr.verify(keyjar=self.kj)
+
+        # The signed JWT is replaced by a dictionary with all the verified values
+        assert bclr['logout_token']['iss'] == 'https://example.com'
+
+    def test_verify_with_key(self):
+        bclr = BackChannelLogoutRequest(logout_token=self.signed_jwt)
+        assert bclr.verify(key=self.key)
+
+        # The signed JWT is replaced by a dictionary with all the verified values
+        assert bclr['logout_token']['iss'] == 'https://example.com'
+
+
+class TestFrontchannelLogout(object):
+    def test_verify_request(self):
+        # May be completely empty
+        fclr = FrontChannelLogoutRequest()
+
+        assert fclr.verify()
