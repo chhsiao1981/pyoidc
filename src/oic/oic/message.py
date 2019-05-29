@@ -333,12 +333,11 @@ class AccessTokenResponse(message.AccessTokenResponse):
     c_param.update({"id_token": SINGLE_OPTIONAL_STRING})
 
     def verify(self, **kwargs):
-        super(AccessTokenResponse, self).verify(**kwargs)
+        super().verify(**kwargs)
         if "id_token" in self:
-            _raw_id_token = self['id_token']
+            self.raw_id_token = self['id_token']
             # replace the JWT with the verified IdToken instance
             self["id_token"] = verify_id_token(self, **kwargs)
-            self['_raw_id_token'] = _raw_id_token
 
         return True
 
@@ -361,7 +360,7 @@ class AuthorizationResponse(message.AuthorizationResponse,
     })
 
     def verify(self, **kwargs):
-        super(AuthorizationResponse, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         if "aud" in self:
             if "client_id" in kwargs:
@@ -370,9 +369,8 @@ class AuthorizationResponse(message.AuthorizationResponse,
                     return False
 
         if "id_token" in self:
-            _raw_id_token = self['id_token']
+            self.raw_id_token = self['id_token']
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
-            self['_raw_id_token'] = _raw_id_token
 
         if "access_token" in self:
             if "token_type" not in self:
@@ -432,7 +430,7 @@ class AuthorizationRequest(message.AuthorizationRequest):
         All parameter values that are present both in the OAuth 2.0
         Authorization Request and in the OpenID Request Object MUST exactly
         match."""
-        super(AuthorizationRequest, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         args = {}
         for arg in ["key", "keyjar", "opponent_id", "sender"]:
@@ -536,7 +534,7 @@ class OpenIDSchema(Message):
     }
 
     def verify(self, **kwargs):
-        super(OpenIDSchema, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         if "birthdate" in self:
             # Either YYYY-MM-DD or just YYYY or 0000-MM-DD
@@ -602,7 +600,7 @@ class RegistrationRequest(Message):
     }
 
     def verify(self, **kwargs):
-        super(RegistrationRequest, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         if "initiate_login_uri" in self and not self["initiate_login_uri"].startswith("https:"):
             raise AssertionError()
@@ -748,33 +746,37 @@ class IdToken(OpenIDSchema):
         return True
 
 
-class RefreshSessionRequest(Message):
+class StateFullMessage(Message):
     c_param = {
-        "id_token": SINGLE_REQUIRED_STRING,
-        "redirect_url": SINGLE_REQUIRED_STRING,
         "state": SINGLE_REQUIRED_STRING
     }
+
+
+class RefreshSessionRequest(StateFullMessage):
+    c_param = StateFullMessage.c_param.copy()
+    c_param.update({
+        "id_token": SINGLE_REQUIRED_STRING,
+        "redirect_url": SINGLE_REQUIRED_STRING
+    })
 
     def verify(self, **kwargs):
         super(RefreshSessionRequest, self).verify(**kwargs)
         if "id_token" in self:
-            _raw_id_token = self['id_token']
+            self.raw_id_token = self['id_token']
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
-            self['_raw_id_token'] = _raw_id_token
 
 
-class RefreshSessionResponse(Message):
-    c_param = {
-        "id_token": SINGLE_REQUIRED_STRING,
-        "state": SINGLE_REQUIRED_STRING
-    }
+class RefreshSessionResponse(StateFullMessage):
+    c_param = StateFullMessage.c_param.copy()
+    c_param.update({
+        "id_token": SINGLE_REQUIRED_STRING
+    })
 
     def verify(self, **kwargs):
         super(RefreshSessionResponse, self).verify(**kwargs)
         if "id_token" in self:
-            _raw_id_token = self['id_token']
+            self.raw_id_token = self['id_token']
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
-            self['_raw_id_token'] = _raw_id_token
 
 
 class CheckSessionRequest(Message):
@@ -783,25 +785,24 @@ class CheckSessionRequest(Message):
     def verify(self, **kwargs):
         super(CheckSessionRequest, self).verify(**kwargs)
         if "id_token" in self:
-            _raw_id_token = self['id_token']
+            self.raw_id_token = self['id_token']
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
-            self['_raw_id_token'] = _raw_id_token
 
 
 class CheckIDRequest(Message):
     c_param = {"access_token": SINGLE_REQUIRED_STRING}
 
 
-class EndSessionRequest(Message):
-    c_param = {
+class EndSessionRequest(StateFullMessage):
+    c_param = StateFullMessage.c_param.copy()
+    c_param.update({
         "id_token_hint": SINGLE_OPTIONAL_STRING,
         "post_logout_redirect_uri": SINGLE_OPTIONAL_STRING,
-        "state": SINGLE_OPTIONAL_STRING
-    }
+    })
 
 
-class EndSessionResponse(Message):
-    c_param = {"state": SINGLE_OPTIONAL_STRING}
+class EndSessionResponse(StateFullMessage):
+    pass
 
 
 class Claims(Message):
@@ -874,7 +875,7 @@ class ProviderConfigurationResponse(Message):
     }
 
     def verify(self, **kwargs):
-        super(ProviderConfigurationResponse, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         if "scopes_supported" in self:
             if "openid" not in self["scopes_supported"]:
@@ -991,7 +992,7 @@ class LogoutToken(Message):
     }
 
     def verify(self, **kwargs):
-        super(LogoutToken, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         if 'nonce' in self:
             raise MessageException('"nonce" is prohibited from appearing in '
@@ -1024,18 +1025,11 @@ class LogoutToken(Message):
 
         _now = utc_time_sans_frac()
 
-        try:
-            _skew = kwargs['skew']
-        except KeyError:
-            _skew = 0
+        _skew = kwargs.get('skew', 0)
+        _iat = self.get('iat', 0)
 
-        try:
-            _iat = self['iat']
-        except KeyError:
-            pass
-        else:
-            if _iat > (_now + _skew):
-                raise ValueError('Invalid issued_at time')
+        if _iat and _iat > (_now + _skew):
+            raise ValueError('Invalid issued_at time')
 
         return True
 
@@ -1051,7 +1045,7 @@ class BackChannelLogoutRequest(Message):
     }
 
     def verify(self, **kwargs):
-        super(BackChannelLogoutRequest, self).verify(**kwargs)
+        super().verify(**kwargs)
 
         args = {}
         for arg in TOKEN_VERIFY_ARGS:
