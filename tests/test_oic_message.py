@@ -1058,6 +1058,10 @@ def test_backchannel_logout_request():
 
     assert bclr.verify(keyjar=kj)
 
+    bclr = BackChannelLogoutRequest(logout_token=_signed_jwt)
+
+    assert bclr.verify(key=key)
+
     # The signed JWT is replaced by a dictionary with all the verified values
     assert bclr['logout_token']['iss'] == 'https://example.com'
 

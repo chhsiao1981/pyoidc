@@ -270,10 +270,13 @@ def check_char_set(string, allowed):
             raise NotAllowedValue("'%c' not in the allowed character set" % c)
 
 
+TOKEN_VERIFY_ARGS = ["key", "keyjar", "algs", "sender"]
+
+
 def verify_id_token(instance, check_hash=False, **kwargs):
     # Try to decode the JWT, checks the signature
     args = {}
-    for arg in ["key", "keyjar", "algs", "sender"]:
+    for arg in TOKEN_VERIFY_ARGS:
         try:
             args[arg] = kwargs[arg]
         except KeyError:
@@ -1050,7 +1053,7 @@ class LogoutToken(Message):
             raise ValueError('Wrong member value in "events"')
 
         # There must be either a 'sub' or a 'sid', and may contain both
-        if not('sub' in self or 'sid' in self):
+        if not ('sub' in self or 'sid' in self):
             raise ValueError('There MUST be either a "sub" or a "sid"')
 
         try:
@@ -1090,19 +1093,19 @@ ID_TOKEN_VERIFY_ARGS = ['keyjar', 'verify', 'encalg', 'encenc', 'sigalg',
 
 class BackChannelLogoutRequest(Message):
     """
-    Defined in
-    https://openid.net/specs/openid-connect-backchannel-1_0.html#LogoutToken
+    Defines the message used in
+    https://openid.net/specs/openid-connect-backchannel-1_0.html
     """
 
     c_param = {
         "logout_token": SINGLE_REQUIRED_STRING
-        }
+    }
 
     def verify(self, **kwargs):
         super(BackChannelLogoutRequest, self).verify(**kwargs)
 
         args = {}
-        for arg in ID_TOKEN_VERIFY_ARGS:
+        for arg in TOKEN_VERIFY_ARGS:
             try:
                 args[arg] = kwargs[arg]
             except KeyError:
@@ -1118,6 +1121,10 @@ class BackChannelLogoutRequest(Message):
 
 
 class FrontChannelLogoutRequest(Message):
+    """
+    Defines the message used in
+    https://openid.net/specs/openid-connect-frontchannel-1_0.html
+    """
     c_param = {
         "iss": SINGLE_OPTIONAL_STRING,
         "sid": SINGLE_OPTIONAL_STRING
@@ -1190,7 +1197,6 @@ class OIDCMessageFactory(MessageFactory):
     endsession_endpoint = MessageTuple(EndSessionRequest, EndSessionResponse)
     checkid_endpoint = MessageTuple(CheckIDRequest, IdToken)
     checksession_endpoint = MessageTuple(CheckSessionRequest, IdToken)
-    endsession_endpoint = MessageTuple(EndSessionRequest, EndSessionResponse)
     refreshsession_endpoint = MessageTuple(
         RefreshSessionRequest, RefreshSessionResponse
     )
