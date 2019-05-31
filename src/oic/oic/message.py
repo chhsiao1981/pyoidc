@@ -348,7 +348,7 @@ class AccessTokenResponse(message.AccessTokenResponse):
     def verify(self, **kwargs):
         super().verify(**kwargs)
         if "id_token" in self:
-            self.raw_id_token = self['id_token']
+            self.raw_id_token = self["id_token"]
             # replace the JWT with the verified IdToken instance
             self["id_token"] = verify_id_token(self, **kwargs)
 
@@ -381,7 +381,7 @@ class AuthorizationResponse(message.AuthorizationResponse, message.AccessTokenRe
                     return False
 
         if "id_token" in self:
-            self.raw_id_token = self['id_token']
+            self.raw_id_token = self["id_token"]
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
 
         if "access_token" in self:
@@ -613,7 +613,7 @@ class RegistrationRequest(Message):
         "frontchannel_logout_uri": SINGLE_OPTIONAL_STRING,
         "frontchannel_logout_session_required": OPTIONAL_LOGICAL,
         "backchannel_logout_uri": SINGLE_OPTIONAL_STRING,
-        "backchannel_logout_session_required": OPTIONAL_LOGICAL
+        "backchannel_logout_session_required": OPTIONAL_LOGICAL,
     }
     c_default = {"application_type": "web", "response_types": ["code"]}
     c_allowed_values = {
@@ -785,35 +785,30 @@ class IdToken(OpenIDSchema):
 
 
 class StateFullMessage(Message):
-    c_param = {
-        "state": SINGLE_REQUIRED_STRING
-    }
+    c_param = {"state": SINGLE_REQUIRED_STRING}
 
 
 class RefreshSessionRequest(StateFullMessage):
     c_param = StateFullMessage.c_param.copy()
-    c_param.update({
-        "id_token": SINGLE_REQUIRED_STRING,
-        "redirect_url": SINGLE_REQUIRED_STRING
-    })
+    c_param.update(
+        {"id_token": SINGLE_REQUIRED_STRING, "redirect_url": SINGLE_REQUIRED_STRING}
+    )
 
     def verify(self, **kwargs):
         super(RefreshSessionRequest, self).verify(**kwargs)
         if "id_token" in self:
-            self.raw_id_token = self['id_token']
+            self.raw_id_token = self["id_token"]
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
 
 
 class RefreshSessionResponse(StateFullMessage):
     c_param = StateFullMessage.c_param.copy()
-    c_param.update({
-        "id_token": SINGLE_REQUIRED_STRING
-    })
+    c_param.update({"id_token": SINGLE_REQUIRED_STRING})
 
     def verify(self, **kwargs):
         super(RefreshSessionResponse, self).verify(**kwargs)
         if "id_token" in self:
-            self.raw_id_token = self['id_token']
+            self.raw_id_token = self["id_token"]
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
 
 
@@ -823,7 +818,7 @@ class CheckSessionRequest(Message):
     def verify(self, **kwargs):
         super(CheckSessionRequest, self).verify(**kwargs)
         if "id_token" in self:
-            self.raw_id_token = self['id_token']
+            self.raw_id_token = self["id_token"]
             self["id_token"] = verify_id_token(self, check_hash=True, **kwargs)
 
 
@@ -833,10 +828,12 @@ class CheckIDRequest(Message):
 
 class EndSessionRequest(StateFullMessage):
     c_param = StateFullMessage.c_param.copy()
-    c_param.update({
-        "id_token_hint": SINGLE_OPTIONAL_STRING,
-        "post_logout_redirect_uri": SINGLE_OPTIONAL_STRING,
-    })
+    c_param.update(
+        {
+            "id_token_hint": SINGLE_OPTIONAL_STRING,
+            "post_logout_redirect_uri": SINGLE_OPTIONAL_STRING,
+        }
+    )
 
 
 class EndSessionResponse(StateFullMessage):
@@ -850,7 +847,7 @@ class Claims(Message):
 class ClaimsRequest(Message):
     c_param = {
         "userinfo": OPTIONAL_MULTIPLE_Claims,
-        "id_token": OPTIONAL_MULTIPLE_Claims
+        "id_token": OPTIONAL_MULTIPLE_Claims,
     }
 
 
@@ -1030,62 +1027,75 @@ class LogoutToken(Message):
     Defined in
     https://openid.net/specs/openid-connect-backchannel-1_0.html#LogoutToken
     """
+
     c_param = {
         "iss": SINGLE_REQUIRED_STRING,
         "sub": SINGLE_OPTIONAL_STRING,
         "aud": REQUIRED_LIST_OF_STRINGS,  # Array of strings or string
         "iat": SINGLE_REQUIRED_INT,
         "jti": SINGLE_REQUIRED_STRING,
-        'events': SINGLE_REQUIRED_JSON,
-        'sid': SINGLE_OPTIONAL_STRING
+        "events": SINGLE_REQUIRED_JSON,
+        "sid": SINGLE_OPTIONAL_STRING,
     }
 
     def verify(self, **kwargs):
         super().verify(**kwargs)
 
-        if 'nonce' in self:
-            raise MessageException('"nonce" is prohibited from appearing in '
-                                   'a LogoutToken.')
+        if "nonce" in self:
+            raise MessageException(
+                '"nonce" is prohibited from appearing in ' "a LogoutToken."
+            )
 
         # Check the 'events' JSON
-        _keys = list(self['events'].keys())
+        _keys = list(self["events"].keys())
         if len(_keys) != 1:
             raise ValueError('Must only be one member in "events"')
         if _keys[0] != BACK_CHANNEL_LOGOUT_EVENT:
             raise ValueError('Wrong member in "events"')
-        if self['events'][_keys[0]] != {}:
+        if self["events"][_keys[0]] != {}:
             raise ValueError('Wrong member value in "events"')
 
         # There must be either a 'sub' or a 'sid', and may contain both
-        if not ('sub' in self or 'sid' in self):
+        if not ("sub" in self or "sid" in self):
             raise ValueError('There MUST be either a "sub" or a "sid"')
 
         try:
-            if kwargs['aud'] not in self['aud']:
-                raise NotForMe('Not among intended audience')
+            if kwargs["aud"] not in self["aud"]:
+                raise NotForMe("Not among intended audience")
         except KeyError:
             pass
 
         try:
-            if kwargs['iss'] != self['iss']:
-                raise NotForMe('Wrong issuer')
+            if kwargs["iss"] != self["iss"]:
+                raise NotForMe("Wrong issuer")
         except KeyError:
             pass
 
         _now = utc_time_sans_frac()
 
-        _skew = kwargs.get('skew', 0)
-        _iat = self.get('iat', 0)
+        _skew = kwargs.get("skew", 0)
+        _iat = self.get("iat", 0)
 
         if _iat and _iat > (_now + _skew):
-            raise ValueError('Invalid issued_at time')
+            raise ValueError("Invalid issued_at time")
 
         return True
 
 
-ID_TOKEN_VERIFY_ARGS = ['keyjar', 'verify', 'encalg', 'encenc', 'sigalg',
-                        'issuer', 'allow_missing_kid', 'no_kid_issuer',
-                        'trusting', 'skew', 'nonce_storage_time', 'client_id']
+ID_TOKEN_VERIFY_ARGS = [
+    "keyjar",
+    "verify",
+    "encalg",
+    "encenc",
+    "sigalg",
+    "issuer",
+    "allow_missing_kid",
+    "no_kid_issuer",
+    "trusting",
+    "skew",
+    "nonce_storage_time",
+    "client_id",
+]
 
 
 class BackChannelLogoutRequest(Message):
@@ -1094,9 +1104,7 @@ class BackChannelLogoutRequest(Message):
     https://openid.net/specs/openid-connect-backchannel-1_0.html
     """
 
-    c_param = {
-        "logout_token": SINGLE_REQUIRED_STRING
-    }
+    c_param = {"logout_token": SINGLE_REQUIRED_STRING}
 
     def verify(self, **kwargs):
         super().verify(**kwargs)
@@ -1112,7 +1120,7 @@ class BackChannelLogoutRequest(Message):
             return False
 
         self["logout_token"] = idt
-        logger.info('Verified Logout Token: {}'.format(idt.to_dict()))
+        logger.info("Verified Logout Token: {}".format(idt.to_dict()))
 
         return True
 
@@ -1122,10 +1130,8 @@ class FrontChannelLogoutRequest(Message):
     Defines the message used in
     https://openid.net/specs/openid-connect-frontchannel-1_0.html
     """
-    c_param = {
-        "iss": SINGLE_OPTIONAL_STRING,
-        "sid": SINGLE_OPTIONAL_STRING
-    }
+
+    c_param = {"iss": SINGLE_OPTIONAL_STRING, "sid": SINGLE_OPTIONAL_STRING}
 
 
 MSG = {
@@ -1160,7 +1166,7 @@ MSG = {
     # LOGOUT messages
     "LogoutToken": LogoutToken,
     "BackChannelLogoutRequest": BackChannelLogoutRequest,
-    "FrontChannelLogoutRequest": FrontChannelLogoutRequest
+    "FrontChannelLogoutRequest": FrontChannelLogoutRequest,
 }
 
 
