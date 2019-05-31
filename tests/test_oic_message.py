@@ -8,24 +8,22 @@ import pytest
 from jwkest import BadSignature
 from jwkest.jwk import SYMKey
 from jwkest.jws import left_hash
-from oic.oic.message import FrontChannelLogoutRequest
-
-from oic.oic.message import BackChannelLogoutRequest
-
-from oic.exception import NotForMe
 
 from oic import rndstr
+from oic.exception import NotForMe
 from oic.oauth2.message import MissingRequiredAttribute
 from oic.oauth2.message import MissingRequiredValue
 from oic.oauth2.message import WrongSigningAlgorithm
+from oic.oic.message import BACK_CHANNEL_LOGOUT_EVENT
 from oic.oic.message import AccessTokenResponse
 from oic.oic.message import AddressClaim
 from oic.oic.message import AtHashError
 from oic.oic.message import AuthorizationRequest
 from oic.oic.message import AuthorizationResponse
-from oic.oic.message import BACK_CHANNEL_LOGOUT_EVENT
+from oic.oic.message import BackChannelLogoutRequest
 from oic.oic.message import CHashError
 from oic.oic.message import Claims
+from oic.oic.message import FrontChannelLogoutRequest
 from oic.oic.message import IdToken
 from oic.oic.message import LogoutToken
 from oic.oic.message import OpenIDSchema
