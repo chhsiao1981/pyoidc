@@ -1020,9 +1020,7 @@ BACK_CHANNEL_LOGOUT_EVENT = "http://schemas.openid.net/event/backchannel-logout"
 
 
 class LogoutToken(Message):
-    """
-    Defined in https://openid.net/specs/openid-connect-backchannel-1_0.html#LogoutToken .
-    """
+    """Defined in https://openid.net/specs/openid-connect-backchannel-1_0.html#LogoutToken ."""
 
     c_param = {
         "iss": SINGLE_REQUIRED_STRING,
@@ -1095,9 +1093,7 @@ ID_TOKEN_VERIFY_ARGS = [
 
 
 class BackChannelLogoutRequest(Message):
-    """
-    Defines the message used in https://openid.net/specs/openid-connect-backchannel-1_0.html .
-    """
+    """Defines the message used in https://openid.net/specs/openid-connect-backchannel-1_0.html ."""
 
     c_param = {"logout_token": SINGLE_REQUIRED_STRING}
 
@@ -1121,9 +1117,7 @@ class BackChannelLogoutRequest(Message):
 
 
 class FrontChannelLogoutRequest(Message):
-    """
-    Defines the message used in https://openid.net/specs/openid-connect-frontchannel-1_0.html .
-    """
+    """Defines the message used in https://openid.net/specs/openid-connect-frontchannel-1_0.html ."""
 
     c_param = {"iss": SINGLE_OPTIONAL_STRING, "sid": SINGLE_OPTIONAL_STRING}
 
