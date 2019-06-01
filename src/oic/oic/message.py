@@ -240,8 +240,12 @@ OPTIONAL_MULTIPLE_Claims = ParamDefinition(
 
 SINGLE_OPTIONAL_IDTOKEN = ParamDefinition(str, False, msg_ser, None, False)
 
-SINGLE_OPTIONAL_REGISTRATION_REQUEST = ParamDefinition(Message, False, msg_ser, registration_request_deser, False)
-SINGLE_OPTIONAL_CLAIMSREQ = ParamDefinition(Message, False, msg_ser_json, claims_request_deser, False)
+SINGLE_OPTIONAL_REGISTRATION_REQUEST = ParamDefinition(
+    Message, False, msg_ser, registration_request_deser, False
+)
+SINGLE_OPTIONAL_CLAIMSREQ = ParamDefinition(
+    Message, False, msg_ser_json, claims_request_deser, False
+)
 
 OPTIONAL_MESSAGE = ParamDefinition(Message, False, msg_ser, message_deser, False)
 REQUIRED_MESSAGE = ParamDefinition(Message, True, msg_ser, message_deser, False)
@@ -250,7 +254,7 @@ REQUIRED_MESSAGE = ParamDefinition(Message, True, msg_ser, message_deser, False)
 
 
 SCOPE_CHARSET = []
-for char in ['\x21', ('\x23', '\x5b'), ('\x5d', '\x7E')]:
+for char in ["\x21", ("\x23", "\x5b"), ("\x5d", "\x7E")]:
     if isinstance(char, tuple):
         c = char[0]
         while c <= char[1]:
